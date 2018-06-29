@@ -8,12 +8,20 @@ Created on Tue May  8 20:51:50 2018
 
 import numpy as np
 import tensorflow as tf
-
-
+from tensorflow.python import debug as tf_debug
+import math
 X_train = np.load('MNIST/X_train_MNIST.npy')
 y_train = np.load('MNIST/y_train_MNIST.npy')
 X_test = np.load('MNIST/X_test_MNIST.npy')
 y_test = np.load('MNIST/y_test_MNIST.npy')
+
+#STOP
+#
+#X_train = X_train[:30000]
+#y_train = y_train[:30000]
+
+#X_train = X_train[:1000]
+#y_train = y_train[:1000]
 
 classes = list(range(10))
 np.random.shuffle(classes)
@@ -45,7 +53,7 @@ n_test = X_test.shape[0]
 inds_train = range(n_train)
 inds_test = range(n_test)
 
-batch_size_train = 16
+batch_size_train = 32
 batch_size_test = 16
 
 n_batch_train = int(n_train/batch_size_train)
@@ -203,7 +211,7 @@ for e in range(n_epoch):
 #        print(y_batch2)
 #        print(y_batch)
 #        print(preds)
-#        #print(preds.astype(int))
+#        print(preds.astype(int))
 #        print(n_false_negative)
 #        print("="*20)        
         

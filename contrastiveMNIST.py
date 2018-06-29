@@ -8,20 +8,18 @@ Created on Tue May  8 20:51:50 2018
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python import debug as tf_debug
-import math
+
 X_train = np.load('MNIST/X_train_MNIST.npy')
 y_train = np.load('MNIST/y_train_MNIST.npy')
 X_test = np.load('MNIST/X_test_MNIST.npy')
 y_test = np.load('MNIST/y_test_MNIST.npy')
 
-#STOP
-#
-#X_train = X_train[:30000]
-#y_train = y_train[:30000]
+n_select = int(.1*len(X_train))
 
-#X_train = X_train[:1000]
-#y_train = y_train[:1000]
+list_select = list(range(n_select))
+np.random.shuffle(list_select)
+X_train = X_train[list_select]
+y_train = y_train[list_select]
 
 classes = list(range(10))
 np.random.shuffle(classes)
@@ -47,9 +45,6 @@ y_test = y_test[list_test]
 n_train = X_train.shape[0]
 n_test = X_test.shape[0]
 
-
-#X_train = np.reshape(X_train,(n_train,28*28))
-#X_test = np.reshape(X_test,(n_test,28*28))
 inds_train = range(n_train)
 inds_test = range(n_test)
 
@@ -62,7 +57,6 @@ n_batch_test = int(n_test/batch_size_test)
 inds_train = list(range(len(list_train)))
 
 inds_test = list(range(n_test))
-
 inds_test1 = inds_test.copy()
 inds_test2 = inds_test.copy()
 
@@ -72,14 +66,9 @@ n_epoch = 1000
 ###############################################################################
 tf.reset_default_graph()
 sess = tf.Session()
-#sess = tf_debug.TensorBoardDebugWrapperSession(sess, "talisol:7000")
-
-
 
 X1 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X1')
 X2 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X2')
-#X1 = tf.placeholder(tf.float32,[None,28*28])
-#X2 = tf.placeholder(tf.float32,[None,28*28])
 y = tf.placeholder(tf.float32,[None],name = 'y')
 
 ##############################################################################
@@ -91,9 +80,9 @@ n_filter_end = n_filter2
 n_final_features = 16
     
 with tf.variable_scope('conv'):
+    
     conv1X1 = tf.layers.conv2d(X1,n_filter1,kernel1,activation = tf.nn.relu,reuse=None,padding='SAME',name='conv1')    
     conv2X1 = tf.layers.conv2d(conv1X1,n_filter2,kernel2,padding = 'SAME',name='conv2') 
-
 
     XfX1 = tf.reshape(conv2X1,[-1,n_filter_end*28*28])
     
@@ -102,6 +91,7 @@ with tf.variable_scope('conv'):
     logits1 = tf.nn.l2_normalize(logits11,axis=1)
 
 with tf.variable_scope('conv',reuse=True):
+    
     conv1X2 = tf.layers.conv2d(X2,n_filter1,kernel1,activation = tf.nn.relu,reuse=None,padding='SAME',name='conv1')    
     conv2X2 = tf.layers.conv2d(conv1X2,n_filter2,kernel2,padding = 'SAME',name='conv2') 
 
@@ -117,8 +107,6 @@ with tf.variable_scope('conv',reuse=True):
 m = .1
 
 diff = logits1 - logits2 + 1e-16
-
-# TODO: replace with diff
 dist = tf.norm((diff),axis=1)
 
 Ls = dist**2
@@ -137,13 +125,8 @@ n_correct = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
 
 
 reduced_loss = tf.reduce_mean(loss,name = 'reduced_loss')
-#optimizer = tf.train.AdamOptimizer(1e-3).minimize(reduced_loss)
-optimizer = tf.train.AdagradOptimizer(1e-1).minimize(reduced_loss)
+optimizer = tf.train.AdamOptimizer(1e-3).minimize(reduced_loss)
 sess.run(tf.initialize_all_variables())
-#sess = tf_debug.TensorBoardDebugWrapperSession(sess, "talisol:7000")
-#for var in tf.trainable_variables():
-#    tf.summary.histogram(var.name, var)
-#merged_summary = tf.summary.merge_all()
 
 inds_test1 = inds_test.copy()
 inds_test2 = inds_test.copy()
@@ -159,11 +142,6 @@ n_batch_train = int(len(inds_train1)/batch_size_train)
 
 for e in range(n_epoch):
 
-  
-    
-#    print('\nepoch',e)
-#    print('='*20)
-    # TRAIN 
 
     #print(len(inds_train1),len(inds_train2))
     np.random.shuffle(inds_train1)
@@ -201,10 +179,10 @@ for e in range(n_epoch):
 
 #    inds_test1 = inds_test.copy()
 #    inds_test2 = inds_test.copy()
-#    
+    
 #    np.random.shuffle(inds_test1)
 #    np.random.shuffle(inds_test2)
-    
+
     total_tp = 0
     total_tn = 0        
     total_fp = 0
@@ -241,8 +219,8 @@ for e in range(n_epoch):
 #        print(y_batch2)
 #        print(y_batch)
 #        print(preds)
-        #print(preds.astype(int))
-        #print(n_false_negative)
+#        print(preds.astype(int))
+#        print(n_false_negative)
 #        print("="*20)        
         
         total_tp += n_true_positive
