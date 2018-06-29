@@ -1,3 +1,6 @@
 /archive
 *.npy
+*.jpg
+*.jpeg
+*.png
 
