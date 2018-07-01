@@ -9,42 +9,21 @@ Created on Tue May  8 20:51:50 2018
 import numpy as np
 import tensorflow as tf
 
-X_train = np.load('MNIST/X_train_MNIST.npy')
-y_train = np.load('MNIST/y_train_MNIST.npy')
-X_test = np.load('MNIST/X_test_MNIST.npy')
-y_test = np.load('MNIST/y_test_MNIST.npy')
+X_train = np.load('omniglot/X_train.npy')
+y_train = np.load('omniglot/y_train.npy')
+X_test = np.load('omniglot/X_test.npy')
+y_test = np.load('omniglot/y_test.npy')
+
+X_train = np.expand_dims(X_train,axis=3)
+X_test = np.expand_dims(X_test,axis=3)
 
 
-n_select = int(len(X_train))
-
-list_select = list(range(n_select))
-np.random.shuffle(list_select)
-X_train = X_train[list_select]
-y_train = y_train[list_select]
-
-classes = list(range(10))
-np.random.shuffle(classes)
-
-train_classes = classes[:8]
-test_classes = classes[8:10]
-
-list_train = []
-for i in train_classes:    
-    list_train += np.ndarray.tolist(np.where(y_train == i)[0])
-    
-list_test = []
-for i in test_classes:    
-    list_test += np.ndarray.tolist(np.where(y_test == i)[0])
-
-np.random.shuffle(list_train)
-n_train = len(list_train)
-
-
-X_train = X_train[list_train]
-y_train = y_train[list_train]
-
-X_test = X_test[list_test]
-y_test = y_test[list_test]
+#n_select = int(.1*len(X_train))
+#
+#list_select = list(range(n_select))
+#np.random.shuffle(list_select)
+#X_train = X_train[list_select]
+#y_train = y_train[list_select]
 
 n_train = X_train.shape[0]
 n_test = X_test.shape[0]
@@ -56,7 +35,7 @@ batch_size_test = 16
 
 n_batch_test = int(n_test/batch_size_test)
 
-inds_train = list(range(len(list_train)))
+inds_train = list(range(n_train))
 inds_test = list(range(n_test))
 
 n_epoch = 1000
@@ -64,8 +43,8 @@ n_epoch = 1000
 tf.reset_default_graph()
 sess = tf.Session()
 
-X1 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X1')
-X2 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X2')
+X1 = tf.placeholder(tf.float32,[None,105,105,1],name = 'X1')
+X2 = tf.placeholder(tf.float32,[None,105,105,1],name = 'X2')
 y = tf.placeholder(tf.float32,[None],name = 'y')
 
 ##############################################################################
@@ -81,7 +60,7 @@ with tf.variable_scope('conv'):
     conv1X1 = tf.layers.conv2d(X1,n_filter1,kernel1,activation = tf.nn.relu,reuse=None,padding='SAME',name='conv1')    
     conv2X1 = tf.layers.conv2d(conv1X1,n_filter2,kernel2,padding = 'SAME',name='conv2') 
 
-    XfX1 = tf.reshape(conv2X1,[-1,n_filter_end*28*28])
+    XfX1 = tf.reshape(conv2X1,[-1,n_filter_end*105*105])
     
     logits11 = tf.layers.dense(XfX1,n_final_features)    
     
@@ -93,7 +72,7 @@ with tf.variable_scope('conv',reuse=True):
     conv2X2 = tf.layers.conv2d(conv1X2,n_filter2,kernel2,padding = 'SAME',name='conv2') 
 
 
-    XfX2 = tf.reshape(conv2X2,[-1,n_filter_end*28*28])
+    XfX2 = tf.reshape(conv2X2,[-1,n_filter_end*105*105])
 
     logits22 = tf.layers.dense(XfX2,n_final_features)    
     
@@ -101,7 +80,7 @@ with tf.variable_scope('conv',reuse=True):
 
 ##############################################################################
 
-m = .5
+m = .1
 
 diff = logits1 - logits2 + 1e-16
 dist = tf.norm((diff),axis=1)
@@ -122,7 +101,7 @@ n_correct = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
 
 
 reduced_loss = tf.reduce_mean(loss,name = 'reduced_loss')
-optimizer = tf.train.AdamOptimizer(1e-1).minimize(reduced_loss)
+optimizer = tf.train.AdamOptimizer(1e-3).minimize(reduced_loss)
 sess.run(tf.initialize_all_variables())
 
 inds_test1 = inds_test.copy()

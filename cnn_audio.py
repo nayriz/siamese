@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue May  8 20:51:50 2018
+Created on Sun Jul  1 15:12:25 2018
 
 @author: john
 """
@@ -9,24 +9,24 @@ Created on Tue May  8 20:51:50 2018
 import numpy as np
 import tensorflow as tf
 
-X_train = np.load('MNIST/X_train_MNIST.npy')
-y_train = np.load('MNIST/y_train_MNIST.npy')
-X_test = np.load('MNIST/X_test_MNIST.npy')
-y_test = np.load('MNIST/y_test_MNIST.npy')
+X_train = np.load('data_google/X_train_small.npy')
+y_train = np.load('data_google/y_train_small.npy')
 
+n_class = np.max(y_train) + 1
 
-n_select = int(len(X_train))
+X_train = np.expand_dims(X_train,axis=2)
 
-list_select = list(range(n_select))
-np.random.shuffle(list_select)
-X_train = X_train[list_select]
-y_train = y_train[list_select]
+X_test = np.load('data_google/X_test_small.npy')
+X_test = np.expand_dims(X_test,axis=2)
 
-classes = list(range(10))
+y_test = np.load('data_google/y_test_small.npy')
+
+###############################################################################
+classes = list(range(n_class))
 np.random.shuffle(classes)
 
-train_classes = classes[:8]
-test_classes = classes[8:10]
+train_classes = classes[:n_class-2]
+test_classes = classes[n_class-2:]
 
 list_train = []
 for i in train_classes:    
@@ -39,7 +39,6 @@ for i in test_classes:
 np.random.shuffle(list_train)
 n_train = len(list_train)
 
-
 X_train = X_train[list_train]
 y_train = y_train[list_train]
 
@@ -48,60 +47,67 @@ y_test = y_test[list_test]
 
 n_train = X_train.shape[0]
 n_test = X_test.shape[0]
+###############################################################################
 
+n_train = X_train.shape[0]
+n_test = X_test.shape[0]
 
 batch_size_train = 32
 batch_size_test = 16
 
+n_batch_train = int(np.ceil(n_train/batch_size_train))
+n_batch_test = int(np.ceil(n_test/batch_size_test))
 
-n_batch_test = int(n_test/batch_size_test)
-
-inds_train = list(range(len(list_train)))
+inds_train = list(range(n_train))
 inds_test = list(range(n_test))
 
-n_epoch = 1000
-###############################################################################
+n_epoch = 100
+
 tf.reset_default_graph()
 sess = tf.Session()
+#sess = tf_debug.TensorBoardDebugWrapperSession(sess, "talisol:7000")
 
-X1 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X1')
-X2 = tf.placeholder(tf.float32,[None,28,28,1],name = 'X2')
+def n_correct_preds(y_preds_class,labels):
+    
+    correct_i = tf.equal(y_preds_class,labels)
+    
+    n_correct = tf.reduce_sum(tf.cast(correct_i,tf.float32))
+    
+    return n_correct
+
+
+X1 = tf.placeholder(tf.float32,[None,16000,1],name = 'X1')
+X2 = tf.placeholder(tf.float32,[None,16000,1],name = 'X2')
 y = tf.placeholder(tf.float32,[None],name = 'y')
 
-##############################################################################
-n_filter1 = 16
+filter1 = 16
 kernel1 = 3
-n_filter2 = 16     
+filter2 = 16
 kernel2 = 3
-n_filter_end = n_filter2
-n_final_features = 16
-    
+
 with tf.variable_scope('conv'):
     
-    conv1X1 = tf.layers.conv2d(X1,n_filter1,kernel1,activation = tf.nn.relu,reuse=None,padding='SAME',name='conv1')    
-    conv2X1 = tf.layers.conv2d(conv1X1,n_filter2,kernel2,padding = 'SAME',name='conv2') 
+    conv1X1 = tf.layers.conv1d(X1,filter1,kernel1,activation = tf.nn.relu, padding = 'SAME',name='conv1')
+    conv2X1 = tf.layers.conv1d(conv1X1,filter2,kernel2, padding = 'SAME',name = 'conv2')
 
-    XfX1 = tf.reshape(conv2X1,[-1,n_filter_end*28*28])
-    
-    logits11 = tf.layers.dense(XfX1,n_final_features)    
-    
-    logits1 = tf.nn.l2_normalize(logits11,axis=1)
+    XfX1 = tf.reshape(conv2X1,[-1,filter2*16000])
 
+    logits11 = tf.layers.dense(XfX1,n_class)
+    
+    logits1 = tf.nn.l2_normalize(logits11,axis=1)    
+    
 with tf.variable_scope('conv',reuse=True):
     
-    conv1X2 = tf.layers.conv2d(X2,n_filter1,kernel1,activation = tf.nn.relu,reuse=None,padding='SAME',name='conv1')    
-    conv2X2 = tf.layers.conv2d(conv1X2,n_filter2,kernel2,padding = 'SAME',name='conv2') 
+    conv1X2 = tf.layers.conv1d(X2,filter1,kernel1,activation = tf.nn.relu, padding = 'SAME',name='conv1')
+    conv2X2 = tf.layers.conv1d(conv1X2,filter2,kernel2, padding = 'SAME',name = 'conv2')
 
+    XfX2 = tf.reshape(conv2X2,[-1,filter2*16000])
 
-    XfX2 = tf.reshape(conv2X2,[-1,n_filter_end*28*28])
+    logits22 = tf.layers.dense(XfX2,n_class)    
 
-    logits22 = tf.layers.dense(XfX2,n_final_features)    
+    logits2 = tf.nn.l2_normalize(logits22,axis=1)    
     
-    logits2 = tf.nn.l2_normalize(logits22,axis=1)
-
-##############################################################################
-
-m = .5
+m = .1
 
 diff = logits1 - logits2 + 1e-16
 dist = tf.norm((diff),axis=1)
@@ -122,7 +128,7 @@ n_correct = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
 
 
 reduced_loss = tf.reduce_mean(loss,name = 'reduced_loss')
-optimizer = tf.train.AdamOptimizer(1e-1).minimize(reduced_loss)
+optimizer = tf.train.AdamOptimizer(1e-3).minimize(reduced_loss)
 sess.run(tf.initialize_all_variables())
 
 inds_test1 = inds_test.copy()
@@ -215,7 +221,7 @@ for e in range(n_epoch):
 #        print(y_batch1)
 #        print(y_batch2)
 #        print(y_batch)
-#        print(preds)
+#        #print(preds)
 #        print(preds.astype(int))
 #        print(n_false_negative)
 #        print("="*20)        
