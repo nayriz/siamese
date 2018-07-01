@@ -12,6 +12,9 @@ import tensorflow as tf
 X_train = np.load('data_google/X_train_small.npy')
 y_train = np.load('data_google/y_train_small.npy')
 
+#X_train = np.load('data_google/X.npy')
+#y_train = np.load('data_google/y.npy')
+
 n_class = np.max(y_train) + 1
 
 X_train = np.expand_dims(X_train,axis=2)
@@ -48,7 +51,28 @@ y_test = y_test[list_test]
 n_train = X_train.shape[0]
 n_test = X_test.shape[0]
 ###############################################################################
+inds_test = list(range(n_test))
+inds_test1 = inds_test.copy()
+inds_test2 = inds_test.copy()
 
+np.random.shuffle(inds_test1)
+np.random.shuffle(inds_test2)  
+
+y_test1 = y_test[inds_test1]
+y_test2 = y_test[inds_test2]
+
+
+y_comp = np.abs(y_test1 - y_test2)
+y_comp = y_comp//np.max(y_comp)
+
+e1 = np.sum(np.abs(y_comp - np.zeros_like(y_comp)))/len(y_test)
+e2 = np.sum(np.abs(y_comp - np.ones_like(y_comp)))/len(y_test)
+
+
+print('The ratio is',e1,e2)
+
+
+#########################################################################
 n_train = X_train.shape[0]
 n_test = X_test.shape[0]
 
@@ -59,9 +83,9 @@ n_batch_train = int(np.ceil(n_train/batch_size_train))
 n_batch_test = int(np.ceil(n_test/batch_size_test))
 
 inds_train = list(range(n_train))
-inds_test = list(range(n_test))
 
-n_epoch = 100
+
+n_epoch = 1000
 
 tf.reset_default_graph()
 sess = tf.Session()
@@ -128,14 +152,10 @@ n_correct = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
 
 
 reduced_loss = tf.reduce_mean(loss,name = 'reduced_loss')
-optimizer = tf.train.AdamOptimizer(1e-3).minimize(reduced_loss)
+optimizer = tf.train.AdamOptimizer(1e-1).minimize(reduced_loss)
 sess.run(tf.initialize_all_variables())
 
-inds_test1 = inds_test.copy()
-inds_test2 = inds_test.copy()
 
-np.random.shuffle(inds_test1)
-np.random.shuffle(inds_test2)  
 
 inds_train1 = inds_train.copy()
 inds_train2 = inds_train.copy()
