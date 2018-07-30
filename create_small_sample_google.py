@@ -18,14 +18,16 @@ np.random.shuffle(inds)
 X = X[inds]
 y = y[inds]
 
-X_train_small = X[:10000]
-y_train_small = y[:1000]
+n_train = 10000
+X_train_small = X[:n_train]
+y_train_small = y[:n_train]
 
 np.save('data_google/X_train_small.npy',X_train_small)
 np.save('data_google/y_train_small.npy',y_train_small)
 
-X_test_small = X[:5000]
-y_test_small = y[:5000]
+n_test = 1000
+X_test_small = X[:n_test]
+y_test_small = y[:n_test]
 
 np.save('data_google/X_test_small.npy',X_test_small)
 np.save('data_google/y_test_small.npy',y_test_small)

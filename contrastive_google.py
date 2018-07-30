@@ -131,7 +131,7 @@ with tf.variable_scope('conv',reuse=True):
 
     logits2 = tf.nn.l2_normalize(logits22,axis=1)    
     
-m = .1
+m = .99
 
 diff = logits1 - logits2 + 1e-16
 dist = tf.norm((diff),axis=1)
@@ -152,7 +152,7 @@ n_correct = tf.reduce_sum(tf.cast(correct_preds,tf.float32))
 
 
 reduced_loss = tf.reduce_mean(loss,name = 'reduced_loss')
-optimizer = tf.train.AdamOptimizer(1e-1).minimize(reduced_loss)
+optimizer = tf.train.AdamOptimizer(1e-5).minimize(reduced_loss)
 sess.run(tf.initialize_all_variables())
 
 
@@ -171,7 +171,7 @@ for e in range(n_epoch):
     np.random.shuffle(inds_train2)
     
     total_loss = 0
-
+    total_diff = 0
     
     for i in range(n_batch_train):
         
@@ -186,7 +186,7 @@ for e in range(n_epoch):
         
         y_batch = np.abs(y_batch1 - y_batch2)
         y_batch[y_batch>0] = 1
-        
+        total_diff += np.sum(y_batch)        
         
         feed_dict = {X1: X_batch1, X2: X_batch2, y: y_batch}     
         sess.run(optimizer,feed_dict)
@@ -225,6 +225,7 @@ for e in range(n_epoch):
         
         y_batch = np.abs(y_batch1 - y_batch2)
         y_batch[y_batch>0] = 1
+
         
         feed_dict = {X1: X_batch1, X2: X_batch2, y: y_batch} 
         total_correct += sess.run(n_correct,feed_dict)        
@@ -258,5 +259,6 @@ for e in range(n_epoch):
     
 #    print('tp',total_tp/n_test_local,'tn',total_tn/n_test_local)
 #    print('fp',total_fp/n_test_local,'fn',total_fn/n_test_local)
-    print('epoch',e,total_correct/n_test_local)    
+    #print('epoch',e,total_correct/n_test_local)    
+    print('epoch',e,total_correct/n_test_local,'percent neg train',total_diff/n_train)     
 #    print('='*batch_size_test*2)
